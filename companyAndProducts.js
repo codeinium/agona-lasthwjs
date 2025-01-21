@@ -17,37 +17,40 @@ import { productsArray, reviewsArray, usersArray, companiesArray } from "./reque
  *  */
 
 // маплю, создаю объекты классов
-const users = usersArray.map((user) => {
-   return user = new User(user.id, user.name)
-})
+const users = usersArray.map(user => new User(user.id, user.name));
+const reviews = reviewsArray.map(review => new Review(review.id, review.userId, review.text));
+const companies = companiesArray.map(company => new Company(company.id, company.name, company.created, company.country));
+const products = productsArray.map(product => new Product(product.id, product.companyId, product.reviewIds, product.name, product.description));
 
-const reviews = reviewsArray.map((review) => {
-   return review = new Review(review.id, review.userId, review.text);
-})
+// вспомогательные мапы
+const usersMap = users.reduce((acc, user) => {
+   acc[user.getId()] = user;
+   return acc;
+}, {});
 
-const companies = companiesArray.map((company) => {
-   return company = new Company(company.id, company.name, company.created, company.country);
-})
+const reviewsMap = reviews.reduce((acc, review) => {
+   acc[review.getId()] = review;
+   return acc;
+}, {});
 
-const products = productsArray.map((product) => {
-   return product = new Product(product.id, product.companyId, product.reviewIds, product.name, product.description);
-})
+const companiesMap = companies.reduce((acc, company) => {
+   acc[company.getId()] = company;
+   return acc;
+}, {});
 
-//общий массив
-const overallArray = companies.map((company) => {
-   const companyProducts = products.filter((product) => {
-      return product.getCompanyId() === company.getId();
-   });
+const productsMap = products.reduce((acc, product) => {
+   acc[product.getId()] = product;
+   return acc;
+}, {});
 
-   const productsAndReviews = companyProducts.map((product) => {
-      const productReviews = reviews.filter((review) => {
-         return product.getReviewIds().includes(review.getId());
-      });
+// общий массив
+const overallArray = companies.map(company => {
+   const companyProducts = products.filter(product => product.getCompanyId() === company.getId());
 
-      const reviewsAndUsers = productReviews.map((review) => {
-         const user = users.find((user) => {
-            return user.getId() === review.getUserId();
-         })
+   const productsAndReviews = companyProducts.map(product => {
+      const productReviews = product.getReviewIds().map(reviewId => {
+         const review = reviewsMap[reviewId];
+         const user = usersMap[review.getUserId()];
          return {
             ...review,
             user: user ? user.getName() : "no user"
@@ -56,7 +59,7 @@ const overallArray = companies.map((company) => {
 
       return {
          ...product,
-         reviews: reviewsAndUsers
+         reviews: productReviews
       };
    });
 
@@ -64,4 +67,4 @@ const overallArray = companies.map((company) => {
       ...company,
       products: productsAndReviews
    };
-})
+});
